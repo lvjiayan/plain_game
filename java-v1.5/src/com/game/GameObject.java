@@ -2,6 +2,10 @@ package com.game;
 
 import java.awt.Rectangle;
 import java.awt.Color;
+import javax.swing.ImageIcon;
+import java.net.URL;
+import java.awt.Image;
+import java.awt.MediaTracker;
 
 public class GameObject {
     protected int x, y;
@@ -23,6 +27,8 @@ public class GameObject {
     private float oscPhase = 0;  // 摆动相位
     private boolean isBulletPack = false;
     private boolean isBombPack = false;
+    private ImageIcon imageIcon = null;  // 新增：用于存储GIF图片
+    private boolean isExplosion = false; // 新增：标记是否为爆炸效果
 
     public GameObject(int x, int y, int width, int height, Color color, int speed) {
         this.x = x;
@@ -141,5 +147,40 @@ public class GameObject {
 
     public boolean isBombPack() {
         return isBombPack;
+    }
+
+    // 新增：设置和获取图片的方法
+    public void setImage(String path) {
+        try {
+            URL url = getClass().getClassLoader().getResource(path);
+            if (url != null) {
+                // 每次都创建新的Image实例
+                Image image = new ImageIcon(url).getImage();
+                // 调整图片大小
+                Image scaledImage = image.getScaledInstance(width + 30, height, Image.SCALE_DEFAULT);
+                imageIcon = new ImageIcon(scaledImage);
+                
+                // 等待图片完全加载
+                MediaTracker tracker = new MediaTracker(new java.awt.Container());
+                tracker.addImage(imageIcon.getImage(), 0);
+                tracker.waitForAll();
+            } else {
+                System.err.println("Could not find image resource: " + path);
+            }
+        } catch (Exception e) {
+            System.err.println("Error loading image: " + e.getMessage());
+        }
+    }
+
+    public ImageIcon getImage() {
+        return imageIcon;
+    }
+
+    public void setExplosion(boolean explosion) {
+        this.isExplosion = explosion;
+    }
+
+    public boolean isExplosion() {
+        return isExplosion;
     }
 }

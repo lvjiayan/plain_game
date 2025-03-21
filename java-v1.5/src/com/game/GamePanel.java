@@ -153,30 +153,9 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
             drawGameObject(g, bomb);
         }
 
-        // 修改爆炸效果的绘制，添加发光效果
+        // 修改爆炸效果的绘制 - 只绘制GIF图片
         for (GameObject explosion : explosions) {
-            Graphics2D g2d = (Graphics2D) g;
-            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            
-            // 绘制外层发光效果
-            float alpha = explosion.getAlpha() * 0.5f;
-            g2d.setColor(new Color(1f, 1f, 1f, alpha));
-            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, alpha));
-            int padding = 10;
-            g2d.fillOval(explosion.getX() - padding, 
-                        explosion.getY() - padding,
-                        explosion.getWidth() + padding * 2, 
-                        explosion.getHeight() + padding * 2);
-            
-            // 绘制主要爆炸效果
-            g2d.setColor(explosion.getColor());
-            g2d.setComposite(AlphaComposite.getInstance(
-                AlphaComposite.SRC_OVER, explosion.getAlpha()));
-            g2d.fillOval(explosion.getX(), explosion.getY(),
-                        explosion.getWidth(), explosion.getHeight());
-            
-            // 恢复默认设置
-            g2d.setComposite(AlphaComposite.SrcOver);
+            drawGameObject(g, explosion);
         }
 
         // Draw power-ups
@@ -670,10 +649,11 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
             bomb.getY() - bomb.getExplosionRadius(),
             bomb.getExplosionRadius() * 2,
             bomb.getExplosionRadius() * 2,
-            EXPLOSION_COLOR,
+            null,
             0
         );
-        explosion.setAlpha(0.9f);
+        explosion.setExplosion(true);
+        explosion.setImage("resources/images/explosion3.gif");  // 使用修改后的setImage
         explosions.add(explosion);
         soundManager.playExplosion();
         checkExplosionCollisions(explosion);
@@ -688,25 +668,8 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
             long explosionAge = currentTime - explosion.getCreateTime();
             
             if (explosionAge >= EXPLOSION_DURATION) {
-                // 开始渐隐效果
-                long fadeAge = explosionAge - EXPLOSION_DURATION;
-                if (fadeAge >= FADE_DURATION) {
-                    iterator.remove();
-                } else {
-                    // 计算渐隐透明度，加入闪烁效果
-                    float baseAlpha = 0.9f * (1 - (float)fadeAge / FADE_DURATION);
-                    // 使用时间来选择闪烁透明度
-                    int flashIndex = (int)((explosionAge / 100) % FLASH_ALPHAS.length);
-                    float flashAlpha = FLASH_ALPHAS[flashIndex];
-                    // 合并基础透明度和闪烁效果
-                    explosion.setAlpha(baseAlpha * flashAlpha);
-                }
-            } else {
-                // 爆炸持续期间的闪烁效果
-                int flashIndex = (int)((explosionAge / 100) % FLASH_ALPHAS.length);
-                explosion.setAlpha(FLASH_ALPHAS[flashIndex]);
+                iterator.remove();
             }
-            
             // 继续检查碰撞
             checkExplosionCollisions(explosion);
         }
@@ -920,6 +883,12 @@ public class GamePanel extends JPanel implements ActionListener, KeyListener {
     }
 
     private void drawGameObject(Graphics g, GameObject obj) {
+        if (obj.isExplosion() && obj.getImage() != null) {
+            // 绘制爆炸GIF图片
+            obj.getImage().paintIcon(this, g, obj.getX(), obj.getY());
+            return;
+        }
+
         // 处理玩家闪烁效果
         if (obj == player && playerFlashing) {
             long flashTime = System.currentTimeMillis() - flashStartTime;
